@@ -4,54 +4,80 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class QueenScript : MonoBehaviour {
+	private QueenAlgo qAlgo;
+
 	private static int MAXQUEENS = 12;
 	private static int MINQUEENS = 4;
 
 	public GameObject whiteCellPrefab;
 	public GameObject blackCellPrefab;
+	public GameObject blueQueenPrefab;
 
 	public Dropdown dropDownNumQ;
 
 	public int numQueens;
+
 	private float cellWidth;
+	private float lastUpdate = 0.0f;
+	public float timeBetweenUpdates = 1.0f;
+
+	private GameObject[] queensArr;
 
 	// Use this for initialization
 	void Start () {
-
 		for (int i = MINQUEENS; i <= MAXQUEENS; i++) {
 			dropDownNumQ.options.Add (new Dropdown.OptionData (i.ToString()));
 		}
 		
 		dropDownNumQ.onValueChanged.AddListener (resetAll);
-		drawTable (numQueens);
+		init (numQueens);
+	}
+
+	private void init(int numQ) {
+		cellWidth = 12.0f / numQ;
+		qAlgo = new QueenAlgo (numQueens);
+		queensArr = new GameObject[numQ];
+
+		for (int i = 0; i < numQ; i++) {
+			queensArr[i] = (GameObject) Instantiate	(blueQueenPrefab, 
+				new Vector3 ((i+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(i)) * cellWidth), 
+				Quaternion.Euler(-90.0f, 0.0f, 0.0f));		
+		}
+
+		drawTable (numQ);
+		updateQueensPos ();
 	}
 
 	// Update is called once per frame
 	void Update () {
-
+		if (Time.time - lastUpdate > timeBetweenUpdates) {
+			qAlgo.makeStep ();
+			updateQueensPos ();
+			lastUpdate = Time.time;
+		}
 	}
 
-	private void resetAll(int n) {
-		int chN = n + MINQUEENS;
-
-		if (chN == numQueens)
-			return;
-
-		numQueens = chN;
-		GameObject[] cellObjects = GameObject.FindGameObjectsWithTag ("CellTag");
-		Debug.Log (cellObjects.Length);
-
-		foreach(GameObject cell in cellObjects) {
-			Destroy (cell);
-		};
-
-		drawTable (chN);
+	private void updateQueensPos() {
+//		GameObject[] queenObjects = GameObject.FindGameObjectsWithTag ("QueenTag");
+//		foreach(GameObject queenFig in queenObjects) {
+//			Destroy (queenFig);
+//		};
+//
+//		for (int col = 0; col < numQueens; ++col) {
+//			Debug.Log ("col " + col + " has to be at " + (numQueens - qAlgo.getPositionAtCol (col)));
+//			Debug.Log ("Initialized at: " + (col+1) * cellWidth + ", 0, " + (numQueens - qAlgo.getPositionAtCol(col)) * cellWidth);
+//			Instantiate (blueQueenPrefab, 
+//				new Vector3 ((col+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(col)) * cellWidth), 
+//				Quaternion.Euler(-90.0f, 0.0f, 0.0f));		
+//		}
 	}
 
 	private void drawTable(int num) {
-		cellWidth = 12.0f / num;
+		
 		whiteCellPrefab.transform.localScale = new Vector3(cellWidth, 0.5f, cellWidth);
 		blackCellPrefab.transform.localScale = new Vector3(cellWidth, 0.5f, cellWidth);
+
+		blueQueenPrefab.transform.localScale = new Vector3(cellWidth * 17.0f, cellWidth * 17.0f, cellWidth * 34.0f);
 
 		for (int row = 1; row <= num; ++row) {
 			for (int col = 1; col <= num; ++col) {
@@ -70,5 +96,20 @@ public class QueenScript : MonoBehaviour {
 				}
 			}
 		}
+	}
+
+	private void resetAll(int n) {
+		int chN = n + MINQUEENS;
+
+		if (chN == numQueens)
+			return;
+
+		numQueens = chN;
+		GameObject[] cellObjects = GameObject.FindGameObjectsWithTag ("CellTag");
+
+		foreach(GameObject cell in cellObjects) {
+			Destroy (cell);
+		};
+		init (chN);
 	}
 }
