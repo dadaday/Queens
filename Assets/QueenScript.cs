@@ -45,31 +45,21 @@ public class QueenScript : MonoBehaviour {
 		}
 
 		drawTable (numQ);
-		updateQueensPos ();
 	}
 
 	// Update is called once per frame
 	void Update () {
 		if (Time.time - lastUpdate > timeBetweenUpdates) {
-			qAlgo.makeStep ();
-			updateQueensPos ();
+			int movedQpos = qAlgo.makeStep ();
+			Debug.Log (movedQpos + " was moved");
+			updateQueensPos (movedQpos);
 			lastUpdate = Time.time;
 		}
 	}
 
-	private void updateQueensPos() {
-//		GameObject[] queenObjects = GameObject.FindGameObjectsWithTag ("QueenTag");
-//		foreach(GameObject queenFig in queenObjects) {
-//			Destroy (queenFig);
-//		};
-//
-//		for (int col = 0; col < numQueens; ++col) {
-//			Debug.Log ("col " + col + " has to be at " + (numQueens - qAlgo.getPositionAtCol (col)));
-//			Debug.Log ("Initialized at: " + (col+1) * cellWidth + ", 0, " + (numQueens - qAlgo.getPositionAtCol(col)) * cellWidth);
-//			Instantiate (blueQueenPrefab, 
-//				new Vector3 ((col+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(col)) * cellWidth), 
-//				Quaternion.Euler(-90.0f, 0.0f, 0.0f));		
-//		}
+	private void updateQueensPos(int mqp) {
+		queensArr [mqp].transform.position =
+			new Vector3 ((mqp+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(mqp)) * cellWidth);
 	}
 
 	private void drawTable(int num) {

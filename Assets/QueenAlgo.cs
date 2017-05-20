@@ -145,7 +145,7 @@ public class QueenAlgo {
 		}
 	}
 
-	public void makeStep() {
+	public int makeStep() {
 		Debug.Log ("step");
 		if(stk.Count == nQueens + 1)
 		{
@@ -173,5 +173,6 @@ public class QueenAlgo {
 				stk.Push(-1);
 			}
 		}
+		return  stk.Count - 2;
 	}
 }
