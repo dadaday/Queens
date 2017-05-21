@@ -12,7 +12,7 @@ public class QueenScript : MonoBehaviour {
 	public GameObject whiteCellPrefab;
 	public GameObject blackCellPrefab;
 	public GameObject blueQueenPrefab;
-	public Button solButton;
+	public GameObject solButton;
 
 	public Dropdown dropDownNumQ;
 	public Slider speedSlider;
@@ -107,12 +107,17 @@ public class QueenScript : MonoBehaviour {
 		}
 		solArr.Add (solutionA);
 
-		Button button = (Button)Instantiate (solButton);
+		GameObject goButton = (GameObject)Instantiate (solButton);
+		goButton.transform.SetParent (solutionScroll.content.transform, false);
 
-		button.transform.SetParent (solutionScroll.content.transform, false);
+		Button button = goButton.GetComponent<Button> ();
 		button.interactable = false;
-		button.onClick.AddListener(() => loadSolution(solCount));
+
+		int n = solCount;
+		button.onClick.AddListener(() => loadSolution(n));
+
 		Debug.Log (solCount + "Delegated");
+
 		solCount++;
 		button.GetComponentInChildren<Text> ().text = "Solution " + (solCount);
 	}
@@ -130,7 +135,7 @@ public class QueenScript : MonoBehaviour {
 	private void loadSolution(int solNo) {
 		for (int i = 0; i < numQueens; i++) {
 			queensArr [i].transform.position =
-				new Vector3 ((i+1) * cellWidth, 0, (numQueens - solArr[solNo - 1][i]) * cellWidth);
+				new Vector3 ((i+1) * cellWidth, 0, (numQueens - solArr[solNo][i]) * cellWidth);
 		}
 	}
 
@@ -185,5 +190,9 @@ public class QueenScript : MonoBehaviour {
 		}
 
 		init (chN);
+	}
+
+	public void ExitApplication() {
+		Application.Quit ();
 	}
 }
