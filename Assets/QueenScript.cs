@@ -12,31 +12,47 @@ public class QueenScript : MonoBehaviour {
 	public GameObject whiteCellPrefab;
 	public GameObject blackCellPrefab;
 	public GameObject blueQueenPrefab;
+	public Button solButton;
 
 	public Dropdown dropDownNumQ;
+	public Slider speedSlider;
+	public ScrollRect solutionScroll;
 
 	public int numQueens;
 
+	private int solCount = 0;
+	private bool finished = false;
+	private bool readyTodisplay = false;
 	private float cellWidth;
 	private float lastUpdate = 0.0f;
-	public float timeBetweenUpdates = 1.0f;
+	public float timeBetweenUpdates;
 
 	private GameObject[] queensArr;
+	private List<int[]> solArr;
 
 	// Use this for initialization
 	void Start () {
+		init (numQueens);
+
 		for (int i = MINQUEENS; i <= MAXQUEENS; i++) {
 			dropDownNumQ.options.Add (new Dropdown.OptionData (i.ToString()));
 		}
-		
 		dropDownNumQ.onValueChanged.AddListener (resetAll);
-		init (numQueens);
+
+		speedSlider.onValueChanged.AddListener(delegate {changeSpeed(); });
 	}
 
 	private void init(int numQ) {
+		solCount = 0;
+		timeBetweenUpdates = 1.0f / speedSlider.value;
+		finished = false;
+		readyTodisplay = false;
 		cellWidth = 12.0f / numQ;
-		qAlgo = new QueenAlgo (numQueens);
+		qAlgo = new QueenAlgo (numQueens, this);
 		queensArr = new GameObject[numQ];
+		solArr = new List<int[]> ();
+
+		blueQueenPrefab.transform.localScale = new Vector3(cellWidth * 17.0f,cellWidth * 17.0f, cellWidth * 34.0f);
 
 		for (int i = 0; i < numQ; i++) {
 			queensArr[i] = (GameObject) Instantiate	(blueQueenPrefab, 
@@ -49,25 +65,79 @@ public class QueenScript : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-		if (Time.time - lastUpdate > timeBetweenUpdates) {
+		lastUpdate += Time.deltaTime;
+
+		if (!finished && lastUpdate > timeBetweenUpdates) {
+			
 			int movedQpos = qAlgo.makeStep ();
-			Debug.Log (movedQpos + " was moved");
-			updateQueensPos (movedQpos);
-			lastUpdate = Time.time;
+
+			if (movedQpos >= 0) {
+				updateQueensPosAtCol (movedQpos);
+			}
+			else {
+				finished = true;
+			}
+
+			lastUpdate = 0.0f;
+		}
+		if (finished && !readyTodisplay) {
+			readyTodisplay = true;
+
+			GameObject[] solButtons = GameObject.FindGameObjectsWithTag ("SolButTag");
+			foreach(GameObject but in solButtons) {
+				but.GetComponent<Button>().interactable = true;
+			}
+
+			int jj = 1;
+			foreach(int[] solA in solArr) {
+				int sol = 0;
+				for (int i = 0; i < numQueens; i++) {
+					sol = sol*10 + solA [i];				
+				}
+				Debug.Log ("SOLUTION " + jj + ": " + sol);
+				jj++;
+			}
 		}
 	}
 
-	private void updateQueensPos(int mqp) {
-		queensArr [mqp].transform.position =
-			new Vector3 ((mqp+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(mqp)) * cellWidth);
+	public void addSolution() {
+		int[] solutionA = new int[numQueens];
+		for (int i = 0; i < numQueens; i++) {
+			solutionA [i] = qAlgo.getPositionAtCol (i);
+		}
+		solArr.Add (solutionA);
+
+		Button button = (Button)Instantiate (solButton);
+
+		button.transform.SetParent (solutionScroll.content.transform, false);
+		button.interactable = false;
+		button.onClick.AddListener(() => loadSolution(solCount));
+		Debug.Log (solCount + "Delegated");
+		solCount++;
+		button.GetComponentInChildren<Text> ().text = "Solution " + (solCount);
+	}
+
+	// sets the queen at column col to given color
+	public void setColor(int col, Color color) {
+		queensArr[col].GetComponent<MeshRenderer> ().material.SetColor ("_Color", color);
+	}
+
+	private void updateQueensPosAtCol(int changedCol) {
+		queensArr [changedCol].transform.position =
+			new Vector3 ((changedCol+1) * cellWidth, 0, (numQueens - qAlgo.getPositionAtCol(changedCol)) * cellWidth);
+	}
+
+	private void loadSolution(int solNo) {
+		for (int i = 0; i < numQueens; i++) {
+			queensArr [i].transform.position =
+				new Vector3 ((i+1) * cellWidth, 0, (numQueens - solArr[solNo - 1][i]) * cellWidth);
+		}
 	}
 
 	private void drawTable(int num) {
 		
 		whiteCellPrefab.transform.localScale = new Vector3(cellWidth, 0.5f, cellWidth);
 		blackCellPrefab.transform.localScale = new Vector3(cellWidth, 0.5f, cellWidth);
-
-		blueQueenPrefab.transform.localScale = new Vector3(cellWidth * 17.0f, cellWidth * 17.0f, cellWidth * 34.0f);
 
 		for (int row = 1; row <= num; ++row) {
 			for (int col = 1; col <= num; ++col) {
@@ -88,6 +158,10 @@ public class QueenScript : MonoBehaviour {
 		}
 	}
 
+	private void changeSpeed() {
+		timeBetweenUpdates = 1.0f / speedSlider.value;
+	}
+
 	private void resetAll(int n) {
 		int chN = n + MINQUEENS;
 
@@ -95,11 +169,21 @@ public class QueenScript : MonoBehaviour {
 			return;
 
 		numQueens = chN;
-		GameObject[] cellObjects = GameObject.FindGameObjectsWithTag ("CellTag");
 
+		GameObject[] cellObjects = GameObject.FindGameObjectsWithTag ("CellTag");
 		foreach(GameObject cell in cellObjects) {
 			Destroy (cell);
-		};
+		}
+
+		foreach(GameObject queen in queensArr) {
+			Destroy (queen);
+		}
+
+		GameObject[] solButtons = GameObject.FindGameObjectsWithTag ("SolButTag");
+		foreach(GameObject but in solButtons) {
+			Destroy (but);
+		}
+
 		init (chN);
 	}
 }

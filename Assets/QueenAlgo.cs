@@ -3,29 +3,37 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class QueenAlgo {
+	private QueenScript qScript;
 
 	private int[] queensPositions;
+	private int[] currentQpos;
 	private int nQueens;
 
 	private int[] rows;
 	private int[] diag1;
 	private int[] diag2;
 
-	private int numberOfSolutions;
-	Stack<int> stk;
+	private Stack<int> stk;
 
-	public QueenAlgo(int numberOfQueens) {
+	private bool[] isBlue;
+
+	public QueenAlgo(int numberOfQueens, QueenScript qs) {
+		qScript = qs;
 		nQueens = numberOfQueens;
 
 		queensPositions = new int[numberOfQueens];
+		currentQpos = new int[numberOfQueens];
+		isBlue = new bool[numberOfQueens];
 
 		rows = new int[numberOfQueens];
 		diag1 = new int[2 * numberOfQueens - 1];
 		diag2 = new int[2 * numberOfQueens - 1];
 
 		for(int i = 0; i < numberOfQueens; ++i) {
+			currentQpos[i] = -1;
 			queensPositions[i] = -1;
 			rows[i] = 0;
+			isBlue [i] = true;
 		}
 
 		for(int i = 0; i < 2 * numberOfQueens - 1; ++i) {
@@ -38,7 +46,7 @@ public class QueenAlgo {
 	}
 
 	public int getPositionAtCol(int col) {
-		return queensPositions [col];
+		return currentQpos[col];
 	}
 
 	private void put(int row, int col) {
@@ -65,60 +73,6 @@ public class QueenAlgo {
 		{
 			if(stk.Count == nQueens + 1)
 			{
-				++numberOfSolutions;
-				Debug.Log("FOUND SOLUTION!");
-				return;
-				Debug.Log(queensPositions);
-				stk.Pop();
-				take(stk.Peek(), stk.Count - 1);
-			}
-			else if(stk.Peek() == nQueens)
-			{
-				stk.Pop();
-				if(stk.Count != 0)
-				{
-					take(stk.Peek(), stk.Count - 1);
-				}
-			}
-			else
-			{
-				int top = stk.Pop();
-				stk.Push(++top);				
-				if(stk.Peek() < nQueens && check(stk.Peek(), stk.Count - 1))
-				{
-					put(stk.Peek(), stk.Count - 1);
-					stk.Push(-1);
-				}
-			}
-		}
-	}
-
-
-
-
-	IEnumerator puti(int row, int col) {
-		yield return new WaitForSeconds (1.0f);
-		queensPositions[col] = row;
-		rows[row] = 1;
-		diag1[row - col + nQueens - 1] = 1;
-		diag2[row + col] = 1;
-	}
-
-	IEnumerator takei(int row, int col) {
-		yield return new WaitForSeconds (1.0f);
-		queensPositions[col] = -1;
-		rows[row] = 0;
-		diag1[row - col + nQueens -1] = 0;
-		diag2[row + col] = 0;
-	}
-
-	public IEnumerator solvei(int speed) {
-		while(stk.Count != 0)
-		{
-			yield return new WaitForSeconds(1.0f);
-			if(stk.Count == nQueens + 1)
-			{
-				++numberOfSolutions;
 				Debug.Log("FOUND SOLUTION!");
 				Debug.Log(queensPositions);
 				stk.Pop();
@@ -135,7 +89,7 @@ public class QueenAlgo {
 			else
 			{
 				int top = stk.Pop();
-				stk.Push(++top);				
+				stk.Push(++top);
 				if(stk.Peek() < nQueens && check(stk.Peek(), stk.Count - 1))
 				{
 					put(stk.Peek(), stk.Count - 1);
@@ -146,33 +100,64 @@ public class QueenAlgo {
 	}
 
 	public int makeStep() {
+		int changedCol = -1;
+		int colNewRow = -1;
+
 		Debug.Log ("step");
+		// if all columns were processed without conflicts the solution is there
 		if(stk.Count == nQueens + 1)
 		{
-			++numberOfSolutions;
+			qScript.addSolution ();
 			Debug.Log("FOUND SOLUTION!");
-			Debug.Log(queensPositions);
 			stk.Pop();
 			take(stk.Peek(), stk.Count - 1);
+
+			changedCol = (stk.Count - 1);
+			colNewRow = -1;
 		}
+		// if the row for given column exceeds the size of the board
 		else if(stk.Peek() == nQueens)
 		{
 			stk.Pop();
 			if(stk.Count != 0)
 			{
 				take(stk.Peek(), stk.Count - 1);
+
+				changedCol = (stk.Count - 1);
+				colNewRow = -1;
 			}
 		}
+		// otherwise just go to the next row for current column
 		else
 		{
 			int top = stk.Pop();
-			stk.Push(++top);				
-			if(stk.Peek() < nQueens && check(stk.Peek(), stk.Count - 1))
-			{
-				put(stk.Peek(), stk.Count - 1);
-				stk.Push(-1);
+			stk.Push(++top);
+
+			if (stk.Peek () < nQueens) {
+				changedCol = (stk.Count - 1);
+				colNewRow = stk.Peek ();
+
+				if (check (stk.Peek (), stk.Count - 1)) {
+					put (stk.Peek (), stk.Count - 1);
+					stk.Push (-1);
+
+					if (!isBlue [changedCol]) {
+						isBlue [changedCol] = true;
+						qScript.setColor (changedCol, Color.blue);
+					}
+				} else {
+					isBlue [changedCol] = false;
+					qScript.setColor (changedCol, Color.red);
+				}
+			} else {
+				changedCol = (stk.Count - 1);
+				colNewRow = -1;
+				qScript.setColor (changedCol, Color.blue);
 			}
 		}
-		return  stk.Count - 2;
+
+		if(changedCol >= 0)
+			currentQpos [changedCol] = colNewRow; 
+		return  changedCol;
 	}
 }
