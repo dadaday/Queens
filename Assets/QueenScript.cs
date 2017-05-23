@@ -23,6 +23,9 @@ public class QueenScript : MonoBehaviour {
 	private int solCount = 0;
 	private bool finished = false;
 	private bool readyTodisplay = false;
+	private bool paused = true;
+	private bool interrupted = false;
+	private int prevSpeed;
 	private float cellWidth;
 	private float lastUpdate = 0.0f;
 	public float timeBetweenUpdates;
@@ -47,6 +50,9 @@ public class QueenScript : MonoBehaviour {
 		timeBetweenUpdates = 1.0f / speedSlider.value;
 		finished = false;
 		readyTodisplay = false;
+		paused = true;
+		interrupted = false;
+		prevSpeed = 1;
 		cellWidth = 12.0f / numQ;
 		qAlgo = new QueenAlgo (numQueens, this);
 		queensArr = new GameObject[numQ];
@@ -65,9 +71,27 @@ public class QueenScript : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
+		if (Input.GetKeyDown (KeyCode.Escape)) {
+			speedSlider.value = 0;
+			paused = true;
+			finished = true;
+			interrupted = true;
+		}
+
+		if(Input.GetKeyDown(KeyCode.Space)) {
+			if (paused) {
+				speedSlider.value = prevSpeed;
+				paused = false;
+			} else {
+				prevSpeed = (int)speedSlider.value;
+				speedSlider.value = 0;
+				paused = true;
+			}
+		}
+
 		lastUpdate += Time.deltaTime;
 
-		if (!finished && lastUpdate > timeBetweenUpdates) {
+		if (!finished && !paused && lastUpdate > timeBetweenUpdates) {
 			
 			int movedQpos = qAlgo.makeStep ();
 
@@ -86,6 +110,15 @@ public class QueenScript : MonoBehaviour {
 			GameObject[] solButtons = GameObject.FindGameObjectsWithTag ("SolButTag");
 			foreach(GameObject but in solButtons) {
 				but.GetComponent<Button>().interactable = true;
+			}
+
+			for (int i = 0; i < numQueens; i++) {
+				queensArr[i].transform.position = new Vector3 ((i+1) * cellWidth, 0, (numQueens + 1) * cellWidth);
+				if (interrupted) {
+					setColor (i, Color.magenta);
+				} else {
+					setColor (i, Color.yellow);
+				}
 			}
 
 			int jj = 1;
@@ -136,6 +169,7 @@ public class QueenScript : MonoBehaviour {
 		for (int i = 0; i < numQueens; i++) {
 			queensArr [i].transform.position =
 				new Vector3 ((i+1) * cellWidth, 0, (numQueens - solArr[solNo][i]) * cellWidth);
+			setColor (i, Color.green);
 		}
 	}
 
@@ -165,6 +199,12 @@ public class QueenScript : MonoBehaviour {
 
 	private void changeSpeed() {
 		timeBetweenUpdates = 1.0f / speedSlider.value;
+		if (speedSlider.value == 0) {
+			paused = true;
+		} else {
+			paused = false;
+		}
+			
 	}
 
 	private void resetAll(int n) {
@@ -190,6 +230,11 @@ public class QueenScript : MonoBehaviour {
 		}
 
 		init (chN);
+	}
+
+	public void unPause() {
+		paused = false;	
+		speedSlider.value = prevSpeed;
 	}
 
 	public void ExitApplication() {
