@@ -91,7 +91,8 @@ public class QueenScript : MonoBehaviour {
 
 		lastUpdate += Time.deltaTime;
 
-		if (!finished && !paused && lastUpdate > timeBetweenUpdates) {
+		if (!finished && !paused && lastUpdate > timeBetweenUpdates 
+			|| (Input.GetKeyDown (KeyCode.RightArrow) && paused)) {
 			
 			int movedQpos = qAlgo.makeStep ();
 
@@ -104,6 +105,7 @@ public class QueenScript : MonoBehaviour {
 
 			lastUpdate = 0.0f;
 		}
+
 		if (finished && !readyTodisplay) {
 			readyTodisplay = true;
 
